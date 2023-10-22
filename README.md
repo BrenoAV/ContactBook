@@ -1,13 +1,9 @@
 # Contact Book
 
-This software is developed in Python using [PySimpleGui](https://www.pysimplegui.org/en/latest/) for the GUI and [SQLite3](https://www.sqlite.org/index.html) for storage data.
+This software is developed in Python using [PySimpleGUI](https://www.pysimplegui.org/en/latest/) for the GUI and [SQLite3](https://www.sqlite.org/index.html) for storage data.
 
-# Python Environment
+![GIF showing a demo of Contact Book application](imgs/demo.gif)
 
-- Create, activate, and install the dependencies:
+# Python Dependencies
 
-```console
-$ python3 -m venv .venv
-$ source activate .venv/bin/activate # Unix
-$ pip install -r requirements.txt
-```
+I just use PySimpleGUI: `$ pip install PySimpleGUI`

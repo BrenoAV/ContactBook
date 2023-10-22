@@ -2,8 +2,8 @@
 Elements of the Graphical Interface
 """
 from typing import Any, Optional, Union
-import PySimpleGUI as sg
 
+import PySimpleGUI as sg
 
 # FONTS CONSTANTS
 FONT_TITLE = ("Helvetica", 20)
@@ -52,17 +52,15 @@ def sg_contact_table(
     headings: list[str],
     key: Optional[str] = None,
 ) -> Union[sg.Table, sg.Text]:
-    if values:
-        return sg.Table(
-            values=values,
-            headings=headings,
-            select_mode=sg.TABLE_SELECT_MODE_BROWSE,
-            key=key,
-            expand_x=True,
-            expand_y=True,
-            font=FONT_DEFAULT,
-            enable_events=True,
-            enable_click_events=True,
-            auto_size_columns=True,
-        )
-    return sg.Text(text="No data", font=FONT_DEFAULT)
+    return sg.Table(
+        values=values,
+        headings=headings,
+        select_mode=sg.TABLE_SELECT_MODE_BROWSE,
+        key=key,
+        expand_x=True,
+        expand_y=True,
+        font=FONT_DEFAULT,
+        enable_events=True,
+        enable_click_events=True,
+        auto_size_columns=True,
+    )

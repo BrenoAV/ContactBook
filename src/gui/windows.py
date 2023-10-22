@@ -7,6 +7,17 @@ from typing import Optional, Union
 
 import PySimpleGUI as sg
 
+from src.database.database import (
+    add_record,
+    create_connection,
+    create_table_schema,
+    delete_all_records,
+    delete_record,
+    get_all_columns,
+    get_all_rows,
+    get_one_row,
+    update_record,
+)
 from src.gui.elements import (
     sg_button_default,
     sg_contact_table,
@@ -15,13 +26,17 @@ from src.gui.elements import (
     sg_text_title,
 )
 
-# TODO: Transform this into a database
-VALUES: list[list[Union[int, str]]] = [
-    [1, "Linda", "Technical Lead", "linda@example.com"],
-    [2, "Joe", "Senior Web Developer", "joe@example"],
-]
-
-HEADINGS: list[str] = ["id", "name", "job", "email"]
+# DATABASE
+conn = create_connection("contact.db")
+assert conn is not None
+create_table_schema(
+    conn,
+    "Contact",
+    sql_columns="""id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            job TEXT,
+            email TEXT NOT NULL""",
+)
 
 
 class MainWindow:
@@ -34,7 +49,9 @@ class MainWindow:
                     [
                         [
                             sg_contact_table(
-                                values=VALUES, headings=HEADINGS, key="-DATABASE-"
+                                values=get_all_rows(conn, "Contact"),
+                                headings=get_all_columns(conn, "Contact"),
+                                key="-DATABASE-",
                             )
                         ]
                     ],
@@ -98,52 +115,75 @@ class MainWindow:
                 break
             if event == "-BUTTON ADD-":
                 # Get the size of the table to be add if add new records
-                table_size = len(self.window["-DATABASE-"].get())
                 add_window = AddWindow()
-                add_window.run(table_size=table_size)
-                self.reset_index_values(VALUES)
-                self.window["-DATABASE-"].update(values=VALUES)
+                add_window.run()
+                values = get_all_rows(conn, "Contact")
+                self.window["-DATABASE-"].update(values=values)
             if event == "-BUTTON EDIT-":
                 # Checking if the row is selected
                 if values["-DATABASE-"]:
-                    row_index: int = values["-DATABASE-"][0]
-                    edit_window = EditWindow(VALUES[row_index])
+                    # Taking the position of the table in the PySimpleGUI
+                    row_index_gui_table: int = values["-DATABASE-"][0]
+                    # Convert to the database id
+                    row_index_db = int(
+                        self.window["-DATABASE-"].get()[row_index_gui_table][0]
+                    )
+                    old_values = get_one_row(conn, "Contact", row=row_index_db)
+                    edit_window = EditWindow(old_values)
                     new_values = edit_window.run()
                     if new_values:
-                        VALUES[row_index] = new_values
-                        self.reset_index_values(VALUES)
-                        self.window["-DATABASE-"].update(values=VALUES)
+                        update_record(
+                            conn,
+                            "Contact",
+                            row=row_index_db,
+                            column="name",
+                            new_value=new_values[0],
+                        )
+                        update_record(
+                            conn,
+                            "Contact",
+                            row=row_index_db,
+                            column="job",
+                            new_value=new_values[1],
+                        )
+                        update_record(
+                            conn,
+                            "Contact",
+                            row=row_index_db,
+                            column="email",
+                            new_value=new_values[2],
+                        )
+                        values = get_all_rows(conn, "Contact")
+                        self.window["-DATABASE-"].update(values=values)
             elif event == "-BUTTON DEL-":
                 # Checking if the row is selected
                 if values["-DATABASE-"]:
-                    index = values["-DATABASE-"][0]
+                    # Taking the position of the table in the PySimpleGUI
+                    row_index_gui_table: int = values["-DATABASE-"][0]
+                    # Convert to the database id
+                    row_index_db = int(
+                        self.window["-DATABASE-"].get()[row_index_gui_table][0]
+                    )
                     ch = sg.popup_yes_no(
-                        f"Do you want delete the selected entry with the id: {VALUES[index][0]}?",
+                        f"Do you want delete the selected entry with the id: {row_index_db}?",
                         title="Delete Confirmation",
                     )
                     if ch.lower() == "yes":
-                        VALUES.pop(index)
-                        self.reset_index_values(VALUES)
-                        self.window["-DATABASE-"].update(values=VALUES)
+                        delete_record(conn, "Contact", row=row_index_db)
+                        values = get_all_rows(conn, "Contact")
+                        self.window["-DATABASE-"].update(values=values)
             elif event == "-BUTTON CLEAR ALL-":
                 ch = sg.popup_yes_no(
                     "Do you want delete ALL the entries?",
                     title="Clear All Confirmation",
                 )
                 if ch.lower() == "yes":
-                    VALUES = []
-                    self.window["-DATABASE-"].update(values=VALUES)
-        self.window.close()
+                    delete_all_records(conn, "Contact")
+                    values = get_all_rows(conn, "Contact")
+                    self.window["-DATABASE-"].update(values=values)
 
-    @staticmethod
-    def reset_index_values(values):
-        # Reset the index values
-        if values:
-            count = 1
-            for i in range(len(values)):
-                values[i][0] = count
-                count += 1
-            return values
+        conn.close()
+        self.window.close()
 
 
 class AddWindow:
@@ -175,18 +215,21 @@ class AddWindow:
             title="Add Contact", layout=layout, element_justification="c", finalize=True
         )
 
-    def run(self, table_size: int) -> None:
+    def run(self) -> None:
         while True:
             event, values = self.window.read()
             if event in (sg.WIN_CLOSED, "-BUTTON CANCEL-"):
                 break
             if event == "-BUTTON OK-":
-                i = table_size + 1
                 name = values["-INPUT NAME-"]
                 job = values["-INPUT JOB-"]
                 email = values["-INPUT EMAIL-"]
-                VALUES.append([i, name, job, email])
-                i += 1
+                add_record(
+                    conn,
+                    "Contact",
+                    columns=["name", "job", "email"],
+                    values=[name, job, email],
+                )
                 break
 
         self.window.close()
@@ -244,7 +287,6 @@ class EditWindow:
                 break
             if event == "-BUTTON MODIFY-":
                 new_values = [
-                    self.old_values[0],
                     self.window["-INPUT NEW NAME-"].get(),
                     self.window["-INPUT NEW JOB-"].get(),
                     self.window["-INPUT NEW EMAIL-"].get(),
