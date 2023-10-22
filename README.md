@@ -7,3 +7,7 @@ This software is developed in Python using [PySimpleGUI](https://www.pysimplegui
 # Python Dependencies
 
 I just use PySimpleGUI: `$ pip install PySimpleGUI`
+
+# References
+
+**Inspired by:** [https://realpython.com/python-contact-book/](https://realpython.com/python-contact-book/)
