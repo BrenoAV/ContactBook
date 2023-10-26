@@ -8,6 +8,12 @@ This software is developed in Python using [PySimpleGUI](https://www.pysimplegui
 
 I just use PySimpleGUI: `$ pip install PySimpleGUI`
 
+# How to run
+
+```console
+$ python app.py
+```
+
 # References
 
 **Inspired by:** [https://realpython.com/python-contact-book/](https://realpython.com/python-contact-book/)
